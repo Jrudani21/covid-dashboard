@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Janak Rudani. All rights reserved.
+# Provenance: Jrudani21/covid-dashboard/covid_dashboard.py 82873b2fa59b7790
 import streamlit as st
 import pandas as pd
 import plotly.express as px

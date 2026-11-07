@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Janak Rudani. All rights reserved.
+# Provenance: Jrudani21/covid-dashboard/test_covid_data.py c8da997f218f5936
 """Run: python test_covid_data.py  (no network, no Streamlit)"""
 from datetime import date
 

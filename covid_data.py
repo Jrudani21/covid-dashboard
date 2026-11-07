@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Janak Rudani. All rights reserved.
+# Provenance: Jrudani21/covid-dashboard/covid_data.py 1f6a0f1f2f11866a
 """Fetch and shape disease.sh data. No Streamlit here, so it can be tested alone."""
 from datetime import datetime
 
