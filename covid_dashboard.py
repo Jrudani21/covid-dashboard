@@ -1,31 +1,34 @@
 import streamlit as st
-import requests
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
+import requests
+
+from covid_data import get_json, trend_window
 
 st.set_page_config(page_title="COVID-19 Global Dashboard", layout="wide", page_icon="🦠")
 
 st.title("🦠 COVID-19 Global Dashboard")
-st.caption(f"Data sourced from disease.sh · Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 @st.cache_data(ttl=600)
-def fetch_global():
-    return requests.get("https://disease.sh/v3/covid-19/all").json()
+def fetch(path):
+    return get_json(path)
 
-@st.cache_data(ttl=600)
-def fetch_historical():
-    return requests.get("https://disease.sh/v3/covid-19/historical/all?lastdays=180").json()
+try:
+    with st.spinner("Fetching data..."):
+        global_data = fetch("all")
+        historical = fetch("historical/all?lastdays=all")
+        countries = fetch("countries?sort=cases")
+except requests.RequestException as e:
+    st.error(f"Could not load data from disease.sh: {e}")
+    st.stop()
 
-@st.cache_data(ttl=600)
-def fetch_countries():
-    return requests.get("https://disease.sh/v3/covid-19/countries?sort=cases").json()
-
-with st.spinner("Fetching live data..."):
-    global_data = fetch_global()
-    historical = fetch_historical()
-    countries = fetch_countries()
+trend = trend_window(historical)
+if not trend["dates"]:
+    st.error("The historical series is empty.")
+    st.stop()
+last_day = trend["dates"][-1]
+st.caption(f"Data from disease.sh. The historical series ends on {last_day:%d %b %Y}; the totals below are the API's latest.")
 
 # --- Global KPIs ---
 st.subheader("Global Overview")
@@ -39,26 +42,20 @@ c5.metric("Case Fatality Rate", f"{global_data['deaths']/global_data['cases']*10
 st.divider()
 
 # --- Historical trend ---
-st.subheader("Global Trend (Last 180 Days)")
-
-dates = list(historical["cases"].keys())
-cases_vals = list(historical["cases"].values())
-deaths_vals = list(historical["deaths"].values())
-recovered_vals = list(historical["recovered"].values())
+st.subheader(f"Global Trend ({trend['dates'][0]:%d %b %Y} to {last_day:%d %b %Y})")
 
 trend_df = pd.DataFrame({
-    "Date": pd.to_datetime(dates),
-    "Cases": cases_vals,
-    "Deaths": deaths_vals,
-    "Recovered": recovered_vals,
+    "Date": pd.to_datetime(trend["dates"]),
+    "Cases": trend["Cases"],
+    "Deaths": trend["Deaths"],
 })
 
-metric = st.selectbox("Select metric", ["Cases", "Deaths", "Recovered"])
+metric = st.selectbox("Select metric", ["Cases", "Deaths"])
 fig = px.area(
     trend_df,
     x="Date",
     y=metric,
-    color_discrete_map={"Cases": "#1f77b4", "Deaths": "#d62728", "Recovered": "#2ca02c"},
+    color_discrete_map={"Cases": "#1f77b4", "Deaths": "#d62728"},
     template="plotly_dark",
 )
 fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), height=350)
@@ -93,6 +90,19 @@ fig2 = px.bar(
 )
 fig2.update_layout(margin=dict(l=0, r=0, t=10, b=0), height=420, yaxis=dict(autorange="reversed"))
 st.plotly_chart(fig2, use_container_width=True)
+
+st.subheader("Top 15 Countries by Cases per Million (population 1M or more)")
+per_m = country_df.merge(
+    pd.DataFrame([{"Country": c["country"], "Population": c.get("population") or 0} for c in countries]),
+    on="Country",
+)
+per_m = per_m[per_m["Population"] >= 1_000_000].nlargest(15, "Cases/1M pop")
+fig2b = px.bar(
+    per_m, x="Cases/1M pop", y="Country", orientation="h",
+    template="plotly_dark", labels={"Cases/1M pop": "Cases per 1M", "Country": ""},
+)
+fig2b.update_layout(margin=dict(l=0, r=0, t=10, b=0), height=420, yaxis=dict(autorange="reversed"))
+st.plotly_chart(fig2b, use_container_width=True)
 
 st.divider()
 

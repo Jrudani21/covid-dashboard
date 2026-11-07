@@ -5,8 +5,8 @@ A live pandemic statistics application built with Streamlit and Plotly, connecte
 ## Dashboard Views
 
 - **Global KPIs**: Total cases, active cases, recoveries, deaths, and a calculated case fatality rate derived directly from the live global endpoint
-- **180-Day Trend Analysis**: Area chart of cases, deaths, or recovered over the trailing 6 months — user-selectable metric with Plotly interactivity
-- **Country Rankings**: Horizontal bar chart of the top 15 nations by case count, with color intensity encoding death toll
+- **Trend Analysis**: Area chart of cases or deaths over the trailing 180 entries of the historical feed. The title shows the real date range; the feed currently ends in March 2023, so the page says so instead of implying it is current
+- **Country Rankings**: Top 15 by total cases (color = deaths) and top 15 by cases per million for countries with 1M or more people
 - **Choropleth Map**: Cases per million population across all countries on a yellow-to-red gradient, making per-capita burden visible at a glance
 - **Data Explorer**: Searchable, filterable table covering all countries with absolute and per-capita metrics
 
